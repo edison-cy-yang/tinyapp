@@ -4,6 +4,19 @@ const PORT = 8080;
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended: true}));
 
+//Generate a random alphanumeric string of length 6
+const generateRandomString = function() {
+  let result= "";
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const characterLength = characters.length;
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characterLength));
+  }
+  return result;
+};
+
+console.log(generateRandomString());
+
 app.set("view engine", "ejs");
 
 const urlDatabase = {
