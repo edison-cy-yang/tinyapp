@@ -88,8 +88,19 @@ app.get("/login", (req, res) => {
 })
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect("/urls");
+  //if a user with that email cannot be found, return error with 403 code
+  const email = req.body.email;
+  const password = req.body.password;
+  if (!checkEmailExists(email)) {
+    res.status(403).send("Cannot find email!");
+  } else if (!checkPasswordMatch(email, password)) { //if a user with that e-mail address is located, compare the password given in the form with the existing user's password. If it does not match, return a response with a 403 status code.
+    res.status(403).send("Password incorrect!!!!");
+  } else {
+    //If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
+    const userID = getUserIdWithEmail(email);
+    res.cookie("user_id", userID);
+    res.redirect("/urls");
+  }
 });
 
 app.post("/logout", (req, res) => {
@@ -135,3 +146,23 @@ const checkEmailExists = function(email) {
   }
   return false;
 };
+
+const checkPasswordMatch = function(email, password) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      if (users[user].password !== password) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+const getUserIdWithEmail = function(email) {
+  for (let user in users) {
+    if(users[user].email === email) {
+      return users[user].id;
+    }
+  }
+  return null;
+}
