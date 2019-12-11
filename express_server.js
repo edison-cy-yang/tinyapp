@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const cookieSession = require('cookie-session');
 
+const { getUserWithEmail, generateRandomString, urlsForUser } = require('./helpers');
+
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
@@ -43,17 +45,6 @@ const users = {
 
 
 ///////HELPER FUNCTIONS/////////
-//Generate a random alphanumeric string of length 6
-const generateRandomString = function() {
-  let result = "";
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const characterLength = characters.length;
-  for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characterLength));
-  }
-  return result;
-};
-
 const checkEmailExists = function(email) {
   for (let user in users) {
     if (users[user].email === email) {
@@ -74,26 +65,6 @@ const checkPasswordMatch = function(email, password) {
   return true;
 };
 
-const getUserIdWithEmail = function(email) {
-  for (let user in users) {
-    if (users[user].email === email) {
-      return users[user].id;
-    }
-  }
-  return null;
-};
-
-//Return the URLs where the userID is equal to the logged in user
-const urlsForUser = function(id) {
-  let result = {};
-  for (let url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      result[url] = urlDatabase[url];
-    }
-  }
-  return result;
-};
-
 ///////////////////////////////////
 
 app.get('/', (req, res) => {
@@ -109,7 +80,7 @@ app.get("/urls", (req, res) => {
     res.redirect("/login");
   } else {
     const loggedInUserID = req.session["user_id"];
-    let urls = urlsForUser(loggedInUserID);
+    let urls = urlsForUser(loggedInUserID, urlDatabase);
     
     let templateVars = { urls: urls, user: users[req.session["user_id"]]};
     res.render("urls_index", templateVars);
@@ -185,8 +156,8 @@ app.post("/login", (req, res) => {
     res.status(403).send("Password incorrect!!!!");
   } else {
     //If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
-    const userID = getUserIdWithEmail(email);
-    req.session["user_id"] = userID;
+    const user = getUserWithEmail(email, users);
+    req.session["user_id"] = user.id;
     res.redirect("/urls");
   }
 });
