@@ -6,6 +6,28 @@ const cookieParser = require('cookie-parser');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
+app.set("view engine", "ejs");
+
+const urlDatabase = {
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
+};
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
+
+
+///////HELPER FUNCTIONS/////////
 //Generate a random alphanumeric string of length 6
 const generateRandomString = function() {
   let result = "";
@@ -17,25 +39,35 @@ const generateRandomString = function() {
   return result;
 };
 
-app.set("view engine", "ejs");
-
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
-
-const users = { 
-  "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
-  },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
+const checkEmailExists = function(email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return true;
+    }
   }
+  return false;
 };
+
+const checkPasswordMatch = function(email, password) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      if (users[user].password !== password) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+const getUserIdWithEmail = function(email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return users[user].id;
+    }
+  }
+  return null;
+};
+///////////////////////////////////
 
 app.get('/', (req, res) => {
   res.send("Hello!");
@@ -70,7 +102,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.longURL;
   res.redirect('http://localhost:8080/urls');
-})
+});
 
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies["user_id"]]};
@@ -85,8 +117,9 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/login", (req, res) => {
   let templateVars = { user: users[req.cookies["user_id"]] };
   res.render("user_login", templateVars);
-})
+});
 
+//Log a user in. Return error if email not found or wrong password
 app.post("/login", (req, res) => {
   //if a user with that email cannot be found, return error with 403 code
   const email = req.body.email;
@@ -113,6 +146,7 @@ app.get("/register", (req, res) => {
   res.render("user_registration", templateVars);
 });
 
+//Register a new user, if the email does not already exist
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -123,12 +157,12 @@ app.post("/register", (req, res) => {
     res.status(400).send("Email already exist!");
   }
   const id = generateRandomString();
-  const new_user = {
+  const newUser = {
     id,
     email,
     password
   };
-  users[id] = new_user;
+  users[id] = newUser;
   res.cookie("user_id", id);
   console.log(users);
   res.redirect("/urls");
@@ -138,31 +172,3 @@ app.listen(PORT, () => {
   console.log(`App listening on ${PORT}`);
 });
 
-const checkEmailExists = function(email) {
-  for (let user in users) {
-    if (users[user].email === email) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const checkPasswordMatch = function(email, password) {
-  for (let user in users) {
-    if (users[user].email === email) {
-      if (users[user].password !== password) {
-        return false;
-      }
-    }
-  }
-  return true;
-};
-
-const getUserIdWithEmail = function(email) {
-  for (let user in users) {
-    if(users[user].email === email) {
-      return users[user].id;
-    }
-  }
-  return null;
-}
