@@ -99,7 +99,7 @@ app.get("/urls/new", (req, res) => {
 //Creates a new URL object and save to urlDatabase
 app.post("/urls", (req, res) => {
   if (!req.session["user_id"]) {
-    res.send("you cannot creat new short URLs if you're not logged in");
+    res.status(401).send("you cannot creat new short URLs if you're not logged in");
   } else {
     const shortURL = generateRandomString();
     const urlObject = {
@@ -113,7 +113,7 @@ app.post("/urls", (req, res) => {
 
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (!req.session["user_id"]) {
-    res.send("You are not logged in");
+    res.status(401).send("You are not logged in");
   }
   if (req.session["user_id"] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
     delete urlDatabase[req.params.shortURL];
@@ -124,7 +124,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 //Only the owner of the URL can edit the link
 app.post("/urls/:shortURL", (req, res) => {
   if (!req.session["user_id"]) {
-    res.send("You are not logged in");
+    res.status(401).send("You are not logged in");
   }
   if (req.session["user_id"] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
     urlDatabase[req.params.shortURL].longURL = req.body.longURL;
@@ -139,11 +139,13 @@ app.get("/urls/:shortURL", (req, res) => {
   }
   //if the shortURL does not match any URL in the database
   if (!urlDatabase[req.params.shortURL]) {
-    res.send("The requested URL does not exist!");
+    let templateVars = { error: "The requeusted URL does not exist", user: users[req.session["user_id"]] };
+    res.render("error", templateVars);
   }
   //if the the URL with the matching :id does not belong to them.
   if (urlDatabase[req.params.shortURL].userID !== req.session["user_id"]) {
-    res.send("You do not have access to this URL");
+    let templateVars = { error: "You do not have access to this URL", user: users[req.session["user_id"]] };
+    res.status(403).render("error", templateVars);
   }
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.session["user_id"]]};
   res.render("urls_show", templateVars);
@@ -151,7 +153,8 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
-    res.send("Cannot find this short URL!");
+    let templateVars = { error: "Cannot find the short URL", user: users[req.session["user_id"]] };
+    res.status(404).render("error", templateVars);
   }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
@@ -171,9 +174,11 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   if (!checkEmailExists(email)) {
-    res.status(403).send("Cannot find email!");
+    let templateVars = { error: "Email does not exist!", user: users[req.session["user_id"]] };
+    res.status(401).render("error", templateVars);
   } else if (!checkPasswordMatch(email, password)) { //if a user with that e-mail address is located, compare the password given in the form with the existing user's password. If it does not match, return a response with a 403 status code.
-    res.status(403).send("Password incorrect!!!!");
+    let templateVars = { error: "Password incorrect!!!!!", user: users[req.session["user_id"]] };
+    res.status(401).render("error", templateVars);
   } else {
     //If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
     const user = getUserWithEmail(email, users);
@@ -198,10 +203,12 @@ app.get("/register", (req, res) => {
 //Register a new user, if the email does not already exist
 app.post("/register", (req, res) => {
   if (!req.body.email || !req.body.password) {
-    res.status(400).send("Empty email or password");
+    let templateVars = { error: "Empty email or password", user: users[req.session["user_id"]] };
+    res.status(400).render("error", templateVars);
   }
   if (checkEmailExists(req.body.email)) {
-    res.status(400).send("Email already exist!");
+    let templateVars = { error: "Email already exists!", user: users[req.session["user_id"]] };
+    res.status(400).render("error", templateVars);
   }
   const email = req.body.email;
   const password = bcrypt.hashSync(req.body.password, 10);
