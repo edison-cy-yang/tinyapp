@@ -9,8 +9,8 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "user3" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "user3" }
 };
 
 const users = {
@@ -23,6 +23,16 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  "user3": {
+    id: "user3",
+    email: "edison.cy.yang@gmail.com",
+    password: "123"
+  },
+  "user4": {
+    id: "user4",
+    email: "edison.c.yang@gmail.com",
+    password: "123"
   }
 };
 
@@ -67,6 +77,18 @@ const getUserIdWithEmail = function(email) {
   }
   return null;
 };
+
+//Return the URLs where the userID is equal to the logged in user
+const urlsForUser = function(id) {
+  let urlsForUser = {};
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      urlsForUser[url] = urlDatabase[url];
+    }
+  }
+  return urlsForUser;
+};
+
 ///////////////////////////////////
 
 app.get('/', (req, res) => {
@@ -78,11 +100,22 @@ app.get('/urls.json', (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
-  res.render("urls_index", templateVars);
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  } else {
+    const loggedInUserID = req.cookies["user_id"];
+    let urls = urlsForUser(loggedInUserID);
+    
+    let templateVars = { urls: urls, user: users[req.cookies["user_id"]]};
+    res.render("urls_index", templateVars);
+  }
 });
 
 app.get("/urls/new", (req, res) => {
+  //If someone is not logged in when trying to access /urls/new, redirect them to the login page.
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  }
   let templateVars = { user: users[req.cookies["user_id"]]};
   res.render("urls_new", templateVars);
 });
@@ -105,6 +138,14 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  //If user is not logged in and tried to access a URL page, prompts them to login
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  }
+  //if the the URL with the matching :id does not belong to them.
+  if (urlDatabase[req.params.shortURL].userID !== req.cookies["user_id"]) {
+    res.send("You do not have access to this URL");
+  }
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies["user_id"]]};
   res.render("urls_show", templateVars);
 });
