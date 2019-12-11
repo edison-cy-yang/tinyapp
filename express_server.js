@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
@@ -17,22 +18,22 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10)
   },
   "user3": {
     id: "user3",
     email: "edison.cy.yang@gmail.com",
-    password: "123"
+    password: bcrypt.hashSync("123",10)
   },
   "user4": {
     id: "user4",
     email: "edison.c.yang@gmail.com",
-    password: "123"
+    password: bcrypt.hashSync("123", 10)
   }
 };
 
@@ -61,7 +62,7 @@ const checkEmailExists = function(email) {
 const checkPasswordMatch = function(email, password) {
   for (let user in users) {
     if (users[user].email === email) {
-      if (users[user].password !== password) {
+      if (!bcrypt.compareSync(password, users[user].password)) {
         return false;
       }
     }
@@ -202,7 +203,7 @@ app.get("/register", (req, res) => {
 //Register a new user, if the email does not already exist
 app.post("/register", (req, res) => {
   const email = req.body.email;
-  const password = req.body.password;
+  const password = bcrypt.hashSync(req.body.password, 10);
   if (!email || !password) {
     res.status(400).send("Empty email or password");
   }
