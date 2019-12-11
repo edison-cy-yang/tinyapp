@@ -127,7 +127,6 @@ app.get("/urls/new", (req, res) => {
 
 //Creates a new URL object and save to urlDatabase
 app.post("/urls", (req, res) => {
-  console.log(req.body);
   const shortURL = generateRandomString();
   const urlObject = {
     longURL: req.body.longURL,
@@ -138,9 +137,7 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  console.log("cookie user id: ", req.session["user_id"]);
   if (req.session["user_id"] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
-    console.log("cookie user id: ", req.session["user_id"]);
     delete urlDatabase[req.params.shortURL];
     res.redirect('http://localhost:8080/urls');
   }
@@ -222,7 +219,6 @@ app.post("/register", (req, res) => {
   };
   users[id] = newUser;
   req.session["user_id"] = id;
-  console.log(users);
   res.redirect("/urls");
 });
 
