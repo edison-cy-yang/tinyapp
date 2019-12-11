@@ -68,11 +68,11 @@ const checkPasswordMatch = function(email, password) {
 ///////////////////////////////////
 
 app.get('/', (req, res) => {
-  res.send("Hello!");
-});
-
-app.get('/urls.json', (req, res) => {
-  res.send(urlDatabase);
+  if (!req.session["user_id"]) {
+    res.redirect('/login');
+  } else {
+    res.redirect('/urls');
+  }
 });
 
 app.get("/urls", (req, res) => {
@@ -98,16 +98,23 @@ app.get("/urls/new", (req, res) => {
 
 //Creates a new URL object and save to urlDatabase
 app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString();
-  const urlObject = {
-    longURL: req.body.longURL,
-    userID: req.session["user_id"]
-  };
-  urlDatabase[shortURL] = urlObject;
-  res.redirect(`http://localhost:8080/urls/${shortURL}`);
+  if (!req.session["user_id"]) {
+    res.send("you cannot creat new short URLs if you're not logged in");
+  } else {
+    const shortURL = generateRandomString();
+    const urlObject = {
+      longURL: req.body.longURL,
+      userID: req.session["user_id"]
+    };
+    urlDatabase[shortURL] = urlObject;
+    res.redirect(`http://localhost:8080/urls/${shortURL}`);
+  }
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
+  if (!req.session["user_id"]) {
+    res.send("You are not logged in");
+  }
   if (req.session["user_id"] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
     delete urlDatabase[req.params.shortURL];
     res.redirect('http://localhost:8080/urls');
@@ -116,6 +123,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //Only the owner of the URL can edit the link
 app.post("/urls/:shortURL", (req, res) => {
+  if (!req.session["user_id"]) {
+    res.send("You are not logged in");
+  }
   if (req.session["user_id"] && urlDatabase[req.params.shortURL].userID === req.session["user_id"]) {
     urlDatabase[req.params.shortURL].longURL = req.body.longURL;
     res.redirect('http://localhost:8080/urls');
@@ -127,6 +137,10 @@ app.get("/urls/:shortURL", (req, res) => {
   if (!req.session["user_id"]) {
     res.redirect("/login");
   }
+  //if the shortURL does not match any URL in the database
+  if (!urlDatabase[req.params.shortURL]) {
+    res.send("The requested URL does not exist!");
+  }
   //if the the URL with the matching :id does not belong to them.
   if (urlDatabase[req.params.shortURL].userID !== req.session["user_id"]) {
     res.send("You do not have access to this URL");
@@ -136,11 +150,17 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
+  if (!urlDatabase[req.params.shortURL]) {
+    res.send("Cannot find this short URL!");
+  }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
 app.get("/login", (req, res) => {
+  if (req.session["user_id"]) {
+    res.redirect('/urls');
+  }
   let templateVars = { user: users[req.session["user_id"]] };
   res.render("user_login", templateVars);
 });
@@ -168,20 +188,24 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  if (req.session["user_id"]) {
+    res.redirect('/urls');
+  }
   let templateVars = { user: users[req.session["user_id"]] };
   res.render("user_registration", templateVars);
 });
 
 //Register a new user, if the email does not already exist
 app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = bcrypt.hashSync(req.body.password, 10);
-  if (!email || !password) {
+  if (!req.body.email || !req.body.password) {
     res.status(400).send("Empty email or password");
   }
-  if (checkEmailExists(email)) {
+  if (checkEmailExists(req.body.email)) {
     res.status(400).send("Email already exist!");
   }
+  const email = req.body.email;
+  const password = bcrypt.hashSync(req.body.password, 10);
+  
   const id = generateRandomString();
   const newUser = {
     id,
