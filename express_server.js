@@ -80,13 +80,13 @@ const getUserIdWithEmail = function(email) {
 
 //Return the URLs where the userID is equal to the logged in user
 const urlsForUser = function(id) {
-  let urlsForUser = {};
+  let result = {};
   for (let url in urlDatabase) {
     if (urlDatabase[url].userID === id) {
-      urlsForUser[url] = urlDatabase[url];
+      result[url] = urlDatabase[url];
     }
   }
-  return urlsForUser;
+  return result;
 };
 
 ///////////////////////////////////
@@ -120,21 +120,33 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+//Creates a new URL object and save to urlDatabase
 app.post("/urls", (req, res) => {
   console.log(req.body);
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  const urlObject = {
+    longURL: req.body.longURL,
+    userID: req.cookies["user_id"]
+  };
+  urlDatabase[shortURL] = urlObject;
   res.redirect(`http://localhost:8080/urls/${shortURL}`);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('http://localhost:8080/urls');
+  console.log("cookie user id: ", req.cookies["user_id"]);
+  if (req.cookies["user_id"] && urlDatabase[req.params.shortURL].userID === req.cookies["user_id"]) {
+    console.log("cookie user id: ", req.cookies["user_id"]);
+    delete urlDatabase[req.params.shortURL];
+    res.redirect('http://localhost:8080/urls');
+  }
 });
 
+//Only the owner of the URL can edit the link
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.longURL;
-  res.redirect('http://localhost:8080/urls');
+  if (req.cookies["user_id"] && urlDatabase[req.params.shortURL].userID === req.cookies["user_id"]) {
+    urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+    res.redirect('http://localhost:8080/urls');
+  }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -146,12 +158,12 @@ app.get("/urls/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL].userID !== req.cookies["user_id"]) {
     res.send("You do not have access to this URL");
   }
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies["user_id"]]};
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.cookies["user_id"]]};
   res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
