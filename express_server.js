@@ -16,8 +16,8 @@ app.use(cookieSession({
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "user3" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "user3" }
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "user3", visits: 0, uniqueVisitors: {}, visitHistory: [] },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "user3", visits: 0, uniqueVisitors: {}, visitHistory: [] }
 };
 
 const users = {
@@ -104,7 +104,10 @@ app.post("/urls", (req, res) => {
     const shortURL = generateRandomString();
     const urlObject = {
       longURL: req.body.longURL,
-      userID: req.session["user_id"]
+      userID: req.session["user_id"],
+      visits: 0,
+      uniqueVisitors: {},
+      visitHistory: []
     };
     urlDatabase[shortURL] = urlObject;
     res.redirect(`http://localhost:8080/urls/${shortURL}`);
@@ -147,7 +150,12 @@ app.get("/urls/:shortURL", (req, res) => {
     let templateVars = { error: "You do not have access to this URL", user: users[req.session["user_id"]] };
     res.status(403).render("error", templateVars);
   }
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL, user: users[req.session["user_id"]]};
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  const visits = urlDatabase[shortURL].visits;
+  const uniqueVisitors = Object.keys(urlDatabase[shortURL].uniqueVisitors).length;
+  const visitHistory = urlDatabase[shortURL].visitHistory;
+  let templateVars = { shortURL, longURL, visits, uniqueVisitors, visitHistory, user: users[req.session["user_id"]]};
   res.render("urls_show", templateVars);
 });
 
@@ -156,7 +164,29 @@ app.get("/u/:shortURL", (req, res) => {
     let templateVars = { error: "Cannot find the short URL", user: users[req.session["user_id"]] };
     res.status(404).render("error", templateVars);
   }
-  const longURL = urlDatabase[req.params.shortURL].longURL;
+  //Use generate random string to generate a visitor id, store in cookie
+  const visitorID = generateRandomString();
+  const shortURL = req.params.shortURL;
+
+  // if there doesn't exist a visitor id in the cookie, that means this user hasnt never visited the URL yet
+  if (!req.session["visitor_id"]) {
+    req.session["visitor_id"] = visitorID;
+  }
+  // if the url database doesn't have this visitor as a unique visitor yet, create it 
+  if (!urlDatabase[shortURL].uniqueVisitors[req.session["visitor_id"]]) {
+    console.log(urlDatabase[shortURL].uniqueVisitors[req.session["visitor_id"]]);
+    urlDatabase[shortURL].uniqueVisitors[req.session["visitor_id"]] = true;
+  }
+
+  // add to visit history
+  const date = new Date(Date.now());
+  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+  const currentVisit = { timestamp: dateString, visitorID: req.session["visitor_id"]};
+  urlDatabase[shortURL].visitHistory.push(currentVisit);
+  // Increment the number of visits for this URL
+  urlDatabase[shortURL].visits++;
+
+  const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
 

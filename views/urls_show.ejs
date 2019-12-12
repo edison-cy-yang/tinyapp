@@ -13,10 +13,21 @@
       <div class="card-body">
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
-        <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
+        <form class = "form-inline" action="/urls/<%= shortURL %>" method="POST">
           <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: 1em">
           <button type="submit" class="btn btn-primary">Update</button>
         </form>
+        <p>Visited <%= visits %> times</p>
+        <p>Number of unique visitors: <%= uniqueVisitors %></p>        
+        <ul style="list-style-type: none;">
+          <% for(let visit in visitHistory) { %>
+            <li>
+              <span>
+                <%= visitHistory[visit].timestamp %> by <%= visitHistory[visit].visitorID %>
+              </span>
+            </li>
+          <% } %>
+        </ul>
       </div>
     <div class="card-footer text-muted"></div>
   </div>
