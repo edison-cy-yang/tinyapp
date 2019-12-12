@@ -4,6 +4,7 @@ const PORT = 8080;
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const cookieSession = require('cookie-session');
+const methodOverride = require('method-override');
 
 const { getUserWithEmail, generateRandomString, urlsForUser } = require('./helpers');
 
@@ -12,6 +13,7 @@ app.use(cookieSession({
   name: 'session',
   keys: ["edgserghdrth", "rerigerpogi", "something", "haha"]
 }));
+app.use(methodOverride('_method'));
 
 app.set("view engine", "ejs");
 
@@ -114,7 +116,7 @@ app.post("/urls", (req, res) => {
   }
 });
 
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.delete("/urls/:shortURL/delete", (req, res) => {
   if (!req.session["user_id"]) {
     res.status(401).send("You are not logged in");
   }
@@ -125,7 +127,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 //Only the owner of the URL can edit the link
-app.post("/urls/:shortURL", (req, res) => {
+app.put("/urls/:shortURL", (req, res) => {
   if (!req.session["user_id"]) {
     res.status(401).send("You are not logged in");
   }
