@@ -6,8 +6,8 @@ Analytics is implemented for each shortened URL. Users that own the URL can see 
 
 ## Final Product
 
-!["screenshot description"](#)
-!["screenshot description"](#)
+!["Users can view the shortened URLs they created"](https://github.com/edison-cy-yang/tinyapp/blob/master/docs/urls_page.png)
+!["Users can view analytics, and edit their URL"](https://github.com/edison-cy-yang/tinyapp/blob/master/docs/urls_show.png)
 
 ## Dependencies
 
