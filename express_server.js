@@ -174,14 +174,14 @@ app.get("/u/:shortURL", (req, res) => {
   if (!req.session["visitor_id"]) {
     req.session["visitor_id"] = visitorID;
   }
-  // if the url database doesn't have this visitor as a unique visitor yet, create it 
+  // if the url database doesn't have this visitor as a unique visitor yet, create it
   if (!urlDatabase[shortURL].uniqueVisitors[req.session["visitor_id"]]) {
     urlDatabase[shortURL].uniqueVisitors[req.session["visitor_id"]] = true;
   }
 
   // add to visit history
   const date = new Date(Date.now());
-  const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+  // const dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
   const currentVisit = { timestamp: date, visitorID: req.session["visitor_id"]};
   urlDatabase[shortURL].visitHistory.push(currentVisit);
   // Increment the number of visits for this URL
