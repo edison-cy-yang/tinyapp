@@ -195,7 +195,7 @@ app.get("/login", (req, res) => {
   if (req.session["user_id"]) {
     res.redirect('/urls');
   }
-  let templateVars = { user: users[req.session["user_id"]] };
+  let templateVars = { user: users[req.session["user_id"]], error: "" };
   res.render("user_login", templateVars);
 });
 
@@ -206,10 +206,10 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
   if (!checkEmailExists(email)) {
     let templateVars = { error: "Email does not exist!", user: users[req.session["user_id"]] };
-    res.status(401).render("error", templateVars);
+    res.status(401).render("user_login", templateVars);
   } else if (!checkPasswordMatch(email, password)) { //if a user with that e-mail address is located, compare the password given in the form with the existing user's password. If it does not match, return a response with a 403 status code.
     let templateVars = { error: "Password incorrect!!!!!", user: users[req.session["user_id"]] };
-    res.status(401).render("error", templateVars);
+    res.status(401).render("user_login", templateVars);
   } else {
     //If both checks pass, set the user_id cookie with the matching user's random ID, then redirect to /urls.
     const user = getUserWithEmail(email, users);
@@ -227,7 +227,7 @@ app.get("/register", (req, res) => {
   if (req.session["user_id"]) {
     res.redirect('/urls');
   }
-  let templateVars = { user: users[req.session["user_id"]] };
+  let templateVars = { user: users[req.session["user_id"]], error: "" };
   res.render("user_registration", templateVars);
 });
 
@@ -235,24 +235,24 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   if (!req.body.email || !req.body.password) {
     let templateVars = { error: "Empty email or password", user: users[req.session["user_id"]] };
-    res.status(400).render("error", templateVars);
-  }
-  if (checkEmailExists(req.body.email)) {
+    res.status(400).render("user_registration", templateVars);
+  } else if (checkEmailExists(req.body.email)) {
     let templateVars = { error: "Email already exists!", user: users[req.session["user_id"]] };
-    res.status(400).render("error", templateVars);
+    res.status(400).render("user_registration", templateVars);
+  } else {
+    const email = req.body.email;
+    const password = bcrypt.hashSync(req.body.password, 10);
+    
+    const id = generateRandomString();
+    const newUser = {
+      id,
+      email,
+      password
+    };
+    users[id] = newUser;
+    req.session["user_id"] = id;
+    res.redirect("/urls");
   }
-  const email = req.body.email;
-  const password = bcrypt.hashSync(req.body.password, 10);
-  
-  const id = generateRandomString();
-  const newUser = {
-    id,
-    email,
-    password
-  };
-  users[id] = newUser;
-  req.session["user_id"] = id;
-  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {

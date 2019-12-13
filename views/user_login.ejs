@@ -11,11 +11,21 @@
   </head>
 
   <body>
+    <script type="text/javascript">
+      setTimeout(() => {
+        $(".alert").remove();
+      }, 2000);    
+    </script>
 
     <%- include('./partials/_header') %>
-
     <main style="margin: 1em;">
-      <h3>You are not logged in. Please login</h3>
+      <h3 class="test">You are not logged in. Please login</h3>
+      <% if(error) { %>
+        <div class="alert alert-danger">
+            <strong>Error!</strong> <%= error %>
+        </div>
+        <%  %>
+      <% } %>
       <form class="form-inline" action="/login" method="POST">
         <div class="form-group mb-2">
           <label for="email">Enter E-mail:</label>
